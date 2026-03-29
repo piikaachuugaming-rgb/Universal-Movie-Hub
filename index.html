@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Universal Movie Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-film"></i>
+                <h1>Movie Hub</h1>
+            </div>
+            <nav class="nav">
+                <a href="#home" class="nav-link active" data-section="home"><i class="fas fa-home"></i><span>Home</span></a>
+                <a href="#movies" class="nav-link" data-section="movies"><i class="fas fa-video"></i><span>Movies</span></a>
+                <a href="#series" class="nav-link" data-section="series"><i class="fas fa-tv"></i><span>Series</span></a>
+                <a href="#anime" class="nav-link" data-section="anime"><i class="fas fa-dragon"></i><span>Anime</span></a>
+                <a href="#watchlist" class="nav-link" data-section="watchlist"><i class="fas fa-bookmark"></i><span>Watchlist</span></a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="search-section">
+        <div class="container">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search movies, series, anime...">
+                <button id="voiceSearch" class="voice-btn"><i class="fas fa-microphone"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <main class="main-content">
+        <section id="home" class="content-section active">
+            <div class="container">
+                <div class="category-section">
+                    <h3 class="section-title">🔥 Trending Now</h3>
+                    <div id="trendingContent" class="content-grid"></div>
+                </div>
+                <div class="category-section">
+                    <h3 class="section-title">🎬 Popular Movies</h3>
+                    <div id="popularMovies" class="content-grid"></div>
+                </div>
+                <div class="category-section">
+                    <h3 class="section-title">📺 Top TV Series</h3>
+                    <div id="topSeries" class="content-grid"></div>
+                </div>
+                <div class="category-section">
+                    <h3 class="section-title">🐉 Anime Collection</h3>
+                    <div id="animeCollection" class="content-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="movies" class="content-section"><div class="container"><h2 class="page-title">Explore Movies</h2><div id="moviesGrid" class="content-grid"></div></div></section>
+        <section id="series" class="content-section"><div class="container"><h2 class="page-title">TV Series & Shows</h2><div id="seriesGrid" class="content-grid"></div></div></section>
+        <section id="anime" class="content-section"><div class="container"><h2 class="page-title">Anime World</h2><div id="animeGrid" class="content-grid"></div></div></section>
+        <section id="watchlist" class="content-section"><div class="container"><h2 class="page-title">My Watchlist</h2><div id="watchlistGrid" class="content-grid"></div></div></section>
+    </main>
+
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="detailsContent"></div>
+        </div>
+    </div>
+
+    <div id="loadingSpinner" class="loading-spinner"><div class="spinner"></div></div>
+
+    <div style="position: fixed; bottom: 25px; right: 25px; background: rgba(229, 9, 20, 0.9); color: #fff; padding: 10px 20px; border-radius: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: bold; font-size: 0.95rem; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 1000; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.2);">
+        ✨ Made by Aman
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="#home" data-section="home" class="bottom-nav-item active"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="#movies" data-section="movies" class="bottom-nav-item"><i class="fas fa-video"></i><span>Movies</span></a>
+        <a href="#series" data-section="series" class="bottom-nav-item"><i class="fas fa-tv"></i><span>Series</span></a>
+        <a href="#anime" data-section="anime" class="bottom-nav-item"><i class="fas fa-dragon"></i><span>Anime</span></a>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>
