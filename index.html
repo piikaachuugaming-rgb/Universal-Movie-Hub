@@ -5,111 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universal Movie Hub | Aman</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
     <header class="main-header">
         <div class="logo">
-            <h1>UNIVERSAL<span>MOVIE HUB</span></h1>
+            <h1>UNIVERSAL<span>HUB</span></h1>
         </div>
-        
-        <div class="header-controls">
-            <select id="langSelect" onchange="setLanguage(this.value)" class="lang-dropdown">
+        <div class="header-right">
+            <select id="langSelect" onchange="setLanguage(this.value)" class="lang-select">
                 <option value="en-US">English</option>
                 <option value="hi-IN">Hindi</option>
-                <option value="ja-JP">Japanese</option>
             </select>
-            
-            <div class="profile-circle" onclick="openProfile()">
-                <i class="fas fa-user-ninja"></i>
-            </div>
         </div>
     </header>
 
-    <div class="search-container">
-        <div class="search-box">
+    <div class="search-area">
+        <div class="search-wrapper">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search movies, series, anime...">
-            <button id="voiceSearch"><i class="fas fa-microphone"></i></button>
+            <input type="text" id="searchInput" placeholder="Search movies, anime, series...">
         </div>
     </div>
 
-    <nav class="top-nav">
-        <a href="#" class="nav-link active" data-section="home">Home</a>
-        <a href="#" class="nav-link" data-section="movies">Movies</a>
-        <a href="#" class="nav-link" data-section="series">Series</a>
-        <a href="#" class="nav-link" data-section="anime">Anime</a>
-        <a href="#" class="nav-link" data-section="watchlist">Watchlist</a>
+    <nav class="desktop-nav">
+        <a href="javascript:void(0)" class="nav-link" data-section="home">Home</a>
+        <a href="javascript:void(0)" class="nav-link" data-section="movies">Movies</a>
+        <a href="javascript:void(0)" class="nav-link" data-section="series">Series</a>
+        <a href="javascript:void(0)" class="nav-link" data-section="anime">Anime</a>
+        <a href="javascript:void(0)" class="nav-link" data-section="watchlist">Watchlist</a>
     </nav>
 
-    <main id="mainContent">
-        
+    <main id="appContent">
         <section id="home" class="content-section active">
-            <h2 class="section-title">Trending This Week</h2>
+            <h2 class="row-title">Trending Now</h2>
             <div id="trendingContent" class="movie-grid"></div>
 
-            <h2 class="section-title">Popular Movies</h2>
+            <h2 class="row-title">Popular Movies</h2>
             <div id="popularMovies" class="movie-grid"></div>
 
-            <h2 class="section-title">Top Rated Series</h2>
+            <h2 class="row-title">Must-Watch Series</h2>
             <div id="topSeries" class="movie-grid"></div>
 
-            <h2 class="section-title">Anime Collection</h2>
+            <h2 class="row-title">Epic Anime</h2>
             <div id="animeCollection" class="movie-grid"></div>
         </section>
 
         <section id="movies" class="content-section">
-            <h2 class="section-title">Explore Movies</h2>
+            <h2 class="row-title">Explore Movies</h2>
             <div id="moviesGrid" class="movie-grid"></div>
         </section>
 
         <section id="series" class="content-section">
-            <h2 class="section-title">TV Series</h2>
+            <h2 class="row-title">TV Series</h2>
             <div id="seriesGrid" class="movie-grid"></div>
         </section>
 
         <section id="anime" class="content-section">
-            <h2 class="section-title">Japanese Anime</h2>
+            <h2 class="row-title">Japanese Anime</h2>
             <div id="animeGrid" class="movie-grid"></div>
         </section>
 
         <section id="watchlist" class="content-section">
-            <h2 class="section-title">My Watchlist</h2>
+            <h2 class="row-title">My Watchlist</h2>
             <div id="watchlistGrid" class="movie-grid"></div>
         </section>
-
     </main>
 
-    <nav class="bottom-nav">
-        <div class="bottom-nav-item active" data-section="home">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </div>
-        <div class="bottom-nav-item" data-section="movies">
-            <i class="fas fa-film"></i>
-            <span>Movies</span>
-        </div>
-        <div class="bottom-nav-item" data-section="anime">
-            <i class="fas fa-ghost"></i>
-            <span>Anime</span>
-        </div>
-        <div class="bottom-nav-item" data-section="watchlist">
-            <i class="fas fa-bookmark"></i>
-            <span>Watchlist</span>
-        </div>
+    <nav class="mobile-nav">
+        <div class="bottom-nav-item" data-section="home"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="bottom-nav-item" data-section="movies"><i class="fas fa-film"></i><span>Movies</span></div>
+        <div class="bottom-nav-item" data-section="anime"><i class="fas fa-dragon"></i><span>Anime</span></div>
+        <div class="bottom-nav-item" data-section="watchlist"><i class="fas fa-bookmark"></i><span>Saved</span></div>
     </nav>
 
     <div id="detailsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">&times;</span>
-            <div id="detailsContent">
-                </div>
+        <div class="modal-container">
+            <div id="detailsContent"></div>
         </div>
     </div>
 
-    <div id="loadingSpinner" class="spinner-overlay">
-        <div class="loader"></div>
+    <div id="loadingSpinner" class="spinner-box">
+        <div class="dual-ring"></div>
     </div>
 
     <script src="app.js"></script>

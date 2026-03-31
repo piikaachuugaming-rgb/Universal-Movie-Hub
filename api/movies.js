@@ -8,23 +8,29 @@ export default async function handler(req, res) {
 
     try {
         if (id && type) {
-            // Movie/TV Details Fetching
+            // Fetching Movie or TV Show Details with Videos
             url = `${BASE_URL}/${type}/${id}?api_key=${API_KEY}&append_to_response=videos&language=${lang}`;
         } else if (query) {
-            // Search Logic
+            // Multi-search for Movies, TV, and Anime
             url = `${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=${lang}`;
         } else if (endpoint) {
-            // Trending/Category Logic
+            // Category fetching (Trending, Popular, Anime)
             url = `${BASE_URL}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_key=${API_KEY}&language=${lang}`;
         } else {
-            return res.status(400).json({ error: "Missing parameters" });
+            return res.status(400).json({ error: "Missing required parameters" });
         }
 
         const response = await fetch(url);
         const data = await response.json();
+        
+        // Final check before sending data
+        if (data.success === false) {
+            return res.status(404).json({ error: data.status_message });
+        }
+
         res.status(200).json(data);
     } catch (error) {
-        console.error("Backend Error:", error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error("Vercel Backend Error:", error);
+        res.status(500).json({ error: 'Internal Server Error fetching from TMDB' });
     }
 }
