@@ -1,0 +1,400 @@
+/* ==========================================
+   1. GLOBAL STYLES
+   ========================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: #000; /* Deep Black */
+    color: #fff;
+    line-height: 1.6;
+    overflow-x: hidden;
+    padding-bottom: 70px; /* Space for bottom nav */
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ==========================================
+   2. HEADER & NAVIGATION
+   ========================================== */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 5%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo h1 {
+    color: #e50914; /* Netflix Red */
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.logo h1 span {
+    color: #fff;
+    font-weight: 300;
+    margin-left: 5px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.lang-dropdown {
+    background: #141414;
+    color: #fff;
+    border: 1px solid #333;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.profile-circle {
+    width: 35px;
+    height: 35px;
+    background: #e50914;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: 0.3s;
+}
+
+.profile-circle:hover { transform: scale(1.1); }
+
+/* Top Navigation (Desktop) */
+.top-nav {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 10px 0;
+    background: #000;
+}
+
+.nav-link {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #b3b3b3;
+    transition: 0.3s;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: #fff;
+}
+
+/* ==========================================
+   3. SEARCH BOX
+   ========================================== */
+.search-container {
+    padding: 10px 5%;
+    display: flex;
+    justify-content: center;
+}
+
+.search-box {
+    width: 100%;
+    max-width: 600px;
+    background: #333;
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    border-radius: 25px;
+}
+
+.search-box input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    flex: 1;
+    padding: 5px 10px;
+    outline: none;
+}
+
+.search-box i, #voiceSearch {
+    color: #b3b3b3;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+}
+
+#voiceSearch:hover { color: #e50914; }
+
+/* ==========================================
+   4. MOVIE GRIDS & CARDS
+   ========================================== */
+.content-section {
+    display: none; /* Hidden by default, toggled by JS */
+    padding: 0 5%;
+}
+
+.content-section.active {
+    display: block;
+}
+
+.section-title {
+    margin: 30px 0 15px;
+    font-size: 1.3rem;
+    border-left: 4px solid #e50914;
+    padding-left: 10px;
+}
+
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+/* Card Styling */
+.content-card {
+    background: #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.content-card:hover {
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.content-card img {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+}
+
+.content-card-info {
+    padding: 8px;
+}
+
+.content-card-info h4 {
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+}
+
+.card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #aaa;
+}
+
+/* ==========================================
+   5. MODAL (DETAILS POPUP)
+   ========================================== */
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    z-index: 2000;
+    overflow-y: auto;
+}
+
+.modal.active { display: block; }
+
+.modal-content {
+    background: #141414;
+    width: 90%;
+    max-width: 800px;
+    margin: 50px auto;
+    border-radius: 12px;
+    position: relative;
+    padding-bottom: 30px;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 2rem;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.p-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.p-btn:hover { opacity: 0.8; }
+
+/* ==========================================
+   6. BOTTOM NAV (MOBILE)
+   ========================================== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    background: #111;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    border-top: 1px solid #333;
+    z-index: 1000;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #757575;
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+
+.bottom-nav-item.active {
+    color: #fff;
+}
+
+.bottom-nav-item i {
+    font-size: 1.2rem;
+    margin-bottom: 3px;
+}
+
+/* ==========================================
+   7. LOADER SPINNER
+   ========================================== */
+.spinner-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.spinner-overlay.active { display: flex; }
+
+.loader {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #333;
+    border-top: 5px solid #e50914;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Desktop view hide bottom nav */
+@media (min-width: 768px) {
+    .bottom-nav { display: none; }
+}
+
+/* Mobile view hide top nav link text */
+@media (max-width: 767px) {
+    .top-nav { display: none; }
+    .movie-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+}
+
+/* Bottom Navigation Bar Fix */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 500px;
+    background: rgba(18, 18, 18, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1000;
+}
+
+.bottom-nav a, .bottom-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #8e8e93;
+    text-decoration: none;
+    font-size: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.bottom-nav a.active, .bottom-nav button.active {
+    color: #e50914; /* Netflix Red active color */
+}
+
+.bottom-nav i {
+    font-size: 20px;
+    margin-bottom: 3px;
+}
+
+/* Mobile Bottom Navigation Fix */
+.mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #111;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid #333;
+    z-index: 9999;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #757575;
+    font-size: 0.75rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.bottom-nav-item.active {
+    color: #e50914; /* Red highlight */
+}
+
+.bottom-nav-item i {
+    font-size: 1.2rem;
+    margin-bottom: 3px;
+}
+
+/* Desktop screen par mobile nav chupa do */
+@media (min-width: 768px) {
+    .mobile-nav {
+        display: none !important;
+    }
+}
