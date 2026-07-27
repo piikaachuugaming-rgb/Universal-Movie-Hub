@@ -2,6 +2,8 @@
 // CONFIGURATION & GLOBAL STATE
 // ==========================================
 const CONFIG = {
+    // Live Render Backend URL
+    BACKEND_URL: 'https://universal-movie-hub.onrender.com',
     IMG_PATH: 'https://image.tmdb.org/t/p/w342',
     NO_POSTER: 'https://via.placeholder.com/342x500/1a1a1a/e50914?text=No+Poster'
 };
@@ -16,6 +18,7 @@ let userLang = localStorage.getItem('appLanguage') || 'en-US';
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupNavigation();
+    fetchAIRecommendations(); // Load AI agent suggestions on startup
 });
 
 async function initializeApp() {
@@ -41,13 +44,36 @@ async function initializeApp() {
 }
 
 // ==========================================
-// CORE DATA FETCHING (Backend Bridge)
+// AI RECOMMENDATIONS ENGINE (Render Bridge)
+// ==========================================
+async function fetchAIRecommendations() {
+    const aiContainer = document.getElementById('aiSuggestionsContent');
+    if (!aiContainer) return;
+
+    try {
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/trending`);
+        if (!response.ok) throw new Error("Backend response error");
+        
+        const data = await response.json();
+        if (data.status === "success" && data.recommendations) {
+            aiContainer.innerHTML = `
+                <div class="ai-box" style="background:#111; padding:15px; border-radius:8px; border-left:4px solid #e50914; margin-bottom:20px;">
+                    <h3 style="color:#e50914; margin-bottom:10px;"><i class="fas fa-robot"></i> CrewAI Agent Suggestions</h3>
+                    <p style="white-space: pre-line; line-height:1.5;">${data.recommendations}</p>
+                </div>
+            `;
+        }
+    } catch (err) {
+        console.log("AI Engine loading offline/waiting wakeup...", err);
+    }
+}
+
+// ==========================================
+// CORE DATA FETCHING (TMDB Bridge)
 // ==========================================
 async function getMovies(params) {
     params.language = userLang;
-    
-    // TEMPORARY DIRECT TMDB FETCH FOR LOCAL TESTING
-    const API_KEY = "f0da50d7b0c16984ccab202db5b1a2b1"; // <-- Yahan apni nayi TMDB key daal
+    const API_KEY = "f0da50d7b0c16984ccab202db5b1a2b1";
     let url = "";
 
     if (params.query) {
@@ -98,7 +124,7 @@ function generateMovieHTML(item) {
 }
 
 // ==========================================
-// DETAIL MODAL & PLAYER (SHINCHAN FIX)
+// DETAIL MODAL & PLAYER
 // ==========================================
 async function showMovieDetails(id, type) {
     showLoading();
@@ -167,7 +193,6 @@ async function executeSearch(query) {
         const data = await getMovies({ query: query.trim() });
         const homeContainer = document.getElementById('trendingContent');
         
-        // Reset view to Home
         switchSection('home');
         homeContainer.previousElementSibling.innerHTML = `🔎 Results for: <span style="color:#e50914">"${query}"</span>`;
         
@@ -215,7 +240,7 @@ function setLanguage(lang) {
     userLang = lang;
     localStorage.setItem('appLanguage', lang);
     showToast(`Language: ${lang === 'hi-IN' ? 'Hindi' : 'English'}`);
-    initializeApp(); // Reload everything in new language
+    initializeApp();
 }
 
 function toggleWatchlist(item) {
@@ -243,7 +268,7 @@ function renderWatchlist() {
 function closeModal() {
     document.getElementById('detailsModal').classList.remove('active');
     document.body.style.overflow = 'auto';
-    document.getElementById('detailsContent').innerHTML = ''; // Stop video playback
+    document.getElementById('detailsContent').innerHTML = '';
 }
 
 function showLoading() { document.getElementById('loadingSpinner')?.classList.add('active'); }
