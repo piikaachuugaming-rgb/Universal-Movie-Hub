@@ -1,18 +1,13 @@
-// ==========================================
-// CONFIGURATION & GLOBAL STATE
-// ==========================================
 const CONFIG = {
     IMG_PATH: 'https://image.tmdb.org/t/p/w342',
-    NO_POSTER: 'https://via.placeholder.com/342x500/1a1a1a/e50914?text=No+Poster'
+    NO_POSTER: 'https://via.placeholder.com/342x500/1a1a1a/e50914?text=No+Poster',
+    TMDB_KEY: '5d6a8fd4550ba2aebf6a13d76d6be02c'
 };
 
 let watchlist = JSON.parse(localStorage.getItem('movieHubWatchlist')) || [];
 let activeItem = { id: null, type: 'movie', trailerKey: null, activeServer: 1 };
 let userLang = localStorage.getItem('appLanguage') || 'en-US';
 
-// ==========================================
-// SMART POP-UP THROTTLER (Single Ad Control)
-// ==========================================
 let allowedPopups = 1;
 let popupsTriggered = 0;
 
@@ -22,13 +17,9 @@ window.open = function(url, target, features) {
         popupsTriggered++;
         return nativeWindowOpen.call(window, url, target, features);
     }
-    console.warn("Extra popup ad blocked.");
     return null;
 };
 
-// ==========================================
-// APP INITIALIZATION
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupNavigation();
@@ -48,26 +39,39 @@ async function initializeApp() {
         ]);
     } catch (error) {
         console.error("Init Error:", error);
-        showToast("Error connecting to backend services!", "error");
     } finally {
         hideLoading();
     }
 }
 
-// ==========================================
-// BACKEND DATA FETCHING
-// ==========================================
 async function getMovies(params) {
+    params.language = userLang;
+    const queryParams = new URLSearchParams(params).toString();
+    
+    // 1. Try Vercel Backend Function
     try {
-        params.language = userLang;
-        const queryParams = new URLSearchParams(params).toString();
         const response = await fetch(`/api/movies?${queryParams}`);
-        if (!response.ok) throw new Error("Backend response error");
-        return await response.json();
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        throw error;
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (e) {
+        console.warn("Backend failed, switching to direct fallback...");
     }
+
+    // 2. Direct Fallback if backend API is cold-starting
+    let directUrl = "";
+    if (params.id && params.type) {
+        directUrl = `https://api.themoviedb.org/3/${params.type}/${params.id}?api_key=${CONFIG.TMDB_KEY}&append_to_response=videos&language=${userLang}`;
+    } else if (params.query) {
+        directUrl = `https://api.themoviedb.org/3/search/multi?api_key=${CONFIG.TMDB_KEY}&query=${encodeURIComponent(params.query)}&language=${userLang}`;
+    } else if (params.endpoint) {
+        const joiner = params.endpoint.includes('?') ? '&' : '?';
+        directUrl = `https://api.themoviedb.org/3${params.endpoint}${joiner}api_key=${CONFIG.TMDB_KEY}&language=${userLang}`;
+    }
+
+    const fallbackRes = await fetch(directUrl);
+    if (!fallbackRes.ok) throw new Error("All Fetch Mechanisms Failed");
+    return await fallbackRes.json();
 }
 
 async function fetchAndRender(endpoint, containerId) {
@@ -79,10 +83,10 @@ async function fetchAndRender(endpoint, containerId) {
         if (data && data.results && data.results.length > 0) {
             container.innerHTML = data.results.map(item => generateMovieHTML(item)).join('');
         } else {
-            container.innerHTML = '<p class="error-msg" style="color:#777; padding:15px;">No content found here.</p>';
+            container.innerHTML = '<p style="color:#777; padding:15px;">No content found.</p>';
         }
     } catch (err) {
-        container.innerHTML = '<p class="error-msg" style="color:#e50914; padding:15px;">Failed to load content. Please refresh.</p>';
+        container.innerHTML = '<p style="color:#e50914; padding:15px;">Failed to load content. Please refresh.</p>';
     }
 }
 
@@ -107,17 +111,9 @@ function generateMovieHTML(item) {
     `;
 }
 
-// ==========================================
-// DETAIL MODAL & DUAL PLAYBACK LOGIC
-// ==========================================
 async function showMovieDetails(id, type) {
-    if (!id) {
-        showToast("Invalid Media ID", "error");
-        return;
-    }
-
+    if (!id) return;
     showLoading();
-    // Reset ad counter for each new movie selection
     popupsTriggered = 0;
     
     const streamType = (type === 'tv' || type === 'series') ? 'tv' : 'movie';
@@ -139,15 +135,13 @@ async function showMovieDetails(id, type) {
                 <h2 style="color:#e50914; margin-bottom:8px; font-size:1.6rem;">${title}</h2>
                 
                 <div style="background:rgba(229,9,20,0.15); color:#ff5252; padding:8px 12px; border-radius:6px; font-size:0.85rem; margin-bottom:12px; border-left:4px solid #e50914;">
-                    ▶ <b>Full Stream Ready:</b> Single Ad Protection Active. Agar stream issue kare toh S2 ya S3 choose karein.
+                    ▶ <b>Full Movie Stream:</b> Click Play below. Switch server if needed.
                 </div>
                 
-                <!-- VIDEO CONTAINER -->
                 <div id="playerWrap" style="background:#000; border-radius:8px; overflow:hidden; margin-bottom:15px; position:relative; min-height:320px;">
                     <div id="clickShield" onclick="dismissShield()" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; z-index:10;">
                         <i class="fas fa-play-circle" style="font-size:3.5rem; color:#e50914; margin-bottom:10px;"></i>
                         <span style="font-weight:bold; font-size:1rem; color:#fff;">Click to Play Full Movie</span>
-                        <span style="font-size:0.75rem; color:#bbb; margin-top:4px;">(Absorbs first ad interaction)</span>
                     </div>
                     <iframe id="mainPlayerFrame" src="https://vidsrc.icu/embed/${streamType}/${id}" width="100%" height="420" frameborder="0" allowfullscreen style="background:#000; border:none; display:block;"></iframe>
                 </div>
@@ -156,11 +150,10 @@ async function showMovieDetails(id, type) {
                     ${data.overview || 'Description not available for this title.'}
                 </p>
                 
-                <!-- CONTROL BUTTONS -->
                 <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                     <button onclick="stream(1)" style="background:#e50914; color:#fff; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 1</button>
                     <button onclick="stream(2)" style="background:#007bff; color:#fff; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 2</button>
-                    <button onclick="stream(3)" style="background:#ffc107; color:#000; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 3 (Anime/Old)</button>
+                    <button onclick="stream(3)" style="background:#ffc107; color:#000; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 3 (Anime)</button>
                     
                     ${activeItem.trailerKey ? `<button id="trailerToggleBtn" onclick="toggleTrailerView()" style="background:#222; color:#ff4444; border:1px solid #ff4444; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;"><i class="fab fa-youtube"></i> Watch Trailer</button>` : ''}
 
@@ -175,8 +168,7 @@ async function showMovieDetails(id, type) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
     } catch (e) {
-        console.error("Modal Error:", e);
-        showToast("Failed to load movie details.", "error");
+        showToast("Failed to load details.", "error");
     } finally {
         hideLoading();
     }
@@ -185,7 +177,6 @@ async function showMovieDetails(id, type) {
 function dismissShield() {
     const shield = document.getElementById('clickShield');
     if (shield) shield.remove();
-    showToast("Starting Movie Stream...");
 }
 
 function stream(serverNo) {
@@ -196,32 +187,17 @@ function stream(serverNo) {
     const { id, type } = activeItem;
     let finalUrl = "";
 
-    if (serverNo === 1) {
-        finalUrl = `https://vidsrc.icu/embed/${type}/${id}`;
-    } else if (serverNo === 2) {
-        finalUrl = `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-    } else if (serverNo === 3) {
-        finalUrl = `https://vidsrc.xyz/embed/${type}?tmdb=${id}`;
-    }
+    if (serverNo === 1) finalUrl = `https://vidsrc.icu/embed/${type}/${id}`;
+    else if (serverNo === 2) finalUrl = `https://multiembed.mov/?video_id=${id}&tmdb=1`;
+    else finalUrl = `https://vidsrc.xyz/embed/${type}?tmdb=${id}`;
 
-    wrap.innerHTML = `
-        <iframe 
-            src="${finalUrl}" 
-            width="100%" 
-            height="420" 
-            frameborder="0" 
-            scrolling="no" 
-            allowfullscreen 
-            style="background:#000; border-radius: 8px; border:none; display:block;">
-        </iframe>`;
-        
+    wrap.innerHTML = `<iframe src="${finalUrl}" width="100%" height="420" frameborder="0" scrolling="no" allowfullscreen style="background:#000; border-radius: 8px; border:none; display:block;"></iframe>`;
+    
     const trailerBtn = document.getElementById('trailerToggleBtn');
     if (trailerBtn) {
         trailerBtn.innerHTML = '<i class="fab fa-youtube"></i> Watch Trailer';
         trailerBtn.style.color = '#ff4444';
     }
-
-    showToast(`Loaded Server ${serverNo}...`);
 }
 
 function toggleTrailerView() {
@@ -233,15 +209,11 @@ function toggleTrailerView() {
         wrap.innerHTML = `<iframe width="100%" height="420" src="https://www.youtube.com/embed/${activeItem.trailerKey}?autoplay=1&rel=0" frameborder="0" allowfullscreen style="border:none; border-radius:8px;"></iframe>`;
         trailerBtn.innerHTML = '◀ Back to Full Movie';
         trailerBtn.style.color = '#fff';
-        showToast("Playing YouTube Trailer");
     } else {
         stream(activeItem.activeServer || 1);
     }
 }
 
-// ==========================================
-// SEARCH & NAVIGATION
-// ==========================================
 async function executeSearch(query) {
     if (!query.trim()) return;
     showLoading();
@@ -257,7 +229,7 @@ async function executeSearch(query) {
         if (data.results && data.results.length > 0) {
             homeContainer.innerHTML = data.results.map(item => generateMovieHTML(item)).join('');
         } else {
-            homeContainer.innerHTML = '<p class="error-msg" style="color:#aaa; padding:20px;">Nothing found for this search.</p>';
+            homeContainer.innerHTML = '<p style="color:#aaa; padding:20px;">Nothing found for this search.</p>';
         }
     } catch (e) {
         showToast("Search failed.", "error");
@@ -296,13 +268,9 @@ function switchSection(id) {
     if (section) section.classList.add('active');
 }
 
-// ==========================================
-// UTILS
-// ==========================================
 function setLanguage(lang) {
     userLang = lang;
     localStorage.setItem('appLanguage', lang);
-    showToast(`Language: ${lang === 'hi-IN' ? 'Hindi' : 'English'}`);
     initializeApp();
 }
 
@@ -323,7 +291,7 @@ function renderWatchlist() {
     const grid = document.getElementById('watchlistGrid');
     if (!grid) return;
     if (watchlist.length === 0) {
-        grid.innerHTML = '<div class="empty-state" style="padding:40px; text-align:center; color:#777;">Your Watchlist is empty. Add some movies!</div>';
+        grid.innerHTML = '<div style="padding:40px; text-align:center; color:#777;">Your Watchlist is empty. Add some movies!</div>';
         return;
     }
     grid.innerHTML = watchlist.map(item => generateMovieHTML(item)).join('');
