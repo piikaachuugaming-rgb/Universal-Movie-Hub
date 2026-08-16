@@ -8,18 +8,6 @@ let watchlist = JSON.parse(localStorage.getItem('movieHubWatchlist')) || [];
 let activeItem = { id: null, type: 'movie', trailerKey: null, activeServer: 1 };
 let userLang = localStorage.getItem('appLanguage') || 'en-US';
 
-let allowedPopups = 1;
-let popupsTriggered = 0;
-
-const nativeWindowOpen = window.open;
-window.open = function(url, target, features) {
-    if (popupsTriggered < allowedPopups) {
-        popupsTriggered++;
-        return nativeWindowOpen.call(window, url, target, features);
-    }
-    return null;
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupNavigation();
@@ -44,34 +32,30 @@ async function initializeApp() {
     }
 }
 
+// BULLETPROOF TMDB CALL (Uses CORS Proxy if direct fails)
 async function getMovies(params) {
-    params.language = userLang;
-    const queryParams = new URLSearchParams(params).toString();
-    
-    // 1. Try Vercel Backend Function
-    try {
-        const response = await fetch(`/api/movies?${queryParams}`);
-        if (response.ok) {
-            return await response.json();
-        }
-    } catch (e) {
-        console.warn("Backend failed, switching to direct fallback...");
-    }
+    let baseUrl = "https://api.themoviedb.org/3";
+    let url = "";
 
-    // 2. Direct Fallback if backend API is cold-starting
-    let directUrl = "";
     if (params.id && params.type) {
-        directUrl = `https://api.themoviedb.org/3/${params.type}/${params.id}?api_key=${CONFIG.TMDB_KEY}&append_to_response=videos&language=${userLang}`;
+        url = `${baseUrl}/${params.type}/${params.id}?api_key=${CONFIG.TMDB_KEY}&append_to_response=videos&language=${userLang}`;
     } else if (params.query) {
-        directUrl = `https://api.themoviedb.org/3/search/multi?api_key=${CONFIG.TMDB_KEY}&query=${encodeURIComponent(params.query)}&language=${userLang}`;
+        url = `${baseUrl}/search/multi?api_key=${CONFIG.TMDB_KEY}&query=${encodeURIComponent(params.query)}&language=${userLang}`;
     } else if (params.endpoint) {
         const joiner = params.endpoint.includes('?') ? '&' : '?';
-        directUrl = `https://api.themoviedb.org/3${params.endpoint}${joiner}api_key=${CONFIG.TMDB_KEY}&language=${userLang}`;
+        url = `${baseUrl}${params.endpoint}${joiner}api_key=${CONFIG.TMDB_KEY}&language=${userLang}`;
     }
 
-    const fallbackRes = await fetch(directUrl);
-    if (!fallbackRes.ok) throw new Error("All Fetch Mechanisms Failed");
-    return await fallbackRes.json();
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Direct blocked");
+        return await res.json();
+    } catch (err) {
+        // High-reliability open CORS proxy fallback
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const fallbackRes = await fetch(proxyUrl);
+        return await fallbackRes.json();
+    }
 }
 
 async function fetchAndRender(endpoint, containerId) {
@@ -86,7 +70,7 @@ async function fetchAndRender(endpoint, containerId) {
             container.innerHTML = '<p style="color:#777; padding:15px;">No content found.</p>';
         }
     } catch (err) {
-        container.innerHTML = '<p style="color:#e50914; padding:15px;">Failed to load content. Please refresh.</p>';
+        container.innerHTML = '<p style="color:#e50914; padding:15px;">Loading error. Please refresh.</p>';
     }
 }
 
@@ -114,7 +98,6 @@ function generateMovieHTML(item) {
 async function showMovieDetails(id, type) {
     if (!id) return;
     showLoading();
-    popupsTriggered = 0;
     
     const streamType = (type === 'tv' || type === 'series') ? 'tv' : 'movie';
     activeItem = { id: id, type: streamType, trailerKey: null, activeServer: 1 };
@@ -135,14 +118,10 @@ async function showMovieDetails(id, type) {
                 <h2 style="color:#e50914; margin-bottom:8px; font-size:1.6rem;">${title}</h2>
                 
                 <div style="background:rgba(229,9,20,0.15); color:#ff5252; padding:8px 12px; border-radius:6px; font-size:0.85rem; margin-bottom:12px; border-left:4px solid #e50914;">
-                    ▶ <b>Full Movie Stream:</b> Click Play below. Switch server if needed.
+                    ▶ <b>Streaming Player</b> (Agar video load na ho toh S2 ya S3 try karein).
                 </div>
                 
                 <div id="playerWrap" style="background:#000; border-radius:8px; overflow:hidden; margin-bottom:15px; position:relative; min-height:320px;">
-                    <div id="clickShield" onclick="dismissShield()" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; z-index:10;">
-                        <i class="fas fa-play-circle" style="font-size:3.5rem; color:#e50914; margin-bottom:10px;"></i>
-                        <span style="font-weight:bold; font-size:1rem; color:#fff;">Click to Play Full Movie</span>
-                    </div>
                     <iframe id="mainPlayerFrame" src="https://vidsrc.icu/embed/${streamType}/${id}" width="100%" height="420" frameborder="0" allowfullscreen style="background:#000; border:none; display:block;"></iframe>
                 </div>
 
@@ -172,11 +151,6 @@ async function showMovieDetails(id, type) {
     } finally {
         hideLoading();
     }
-}
-
-function dismissShield() {
-    const shield = document.getElementById('clickShield');
-    if (shield) shield.remove();
 }
 
 function stream(serverNo) {
