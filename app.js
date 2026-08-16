@@ -1,13 +1,20 @@
+// ==========================================
+// CONFIGURATION & GLOBAL STATE
+// ==========================================
 const CONFIG = {
+    API_KEY: 'f0da50d7b0c16984ccab202db5b1a2b1', // Stable working key
+    BASE_URL: 'https://api.themoviedb.org/3',
     IMG_PATH: 'https://image.tmdb.org/t/p/w342',
-    NO_POSTER: 'https://via.placeholder.com/342x500/1a1a1a/e50914?text=No+Poster',
-    TMDB_KEY: '5d6a8fd4550ba2aebf6a13d76d6be02c'
+    NO_POSTER: 'https://via.placeholder.com/342x500/1a1a1a/e50914?text=No+Poster'
 };
 
 let watchlist = JSON.parse(localStorage.getItem('movieHubWatchlist')) || [];
-let activeItem = { id: null, type: 'movie', trailerKey: null, activeServer: 1 };
+let activeItem = { id: null, type: 'movie' };
 let userLang = localStorage.getItem('appLanguage') || 'en-US';
 
+// ==========================================
+// INITIALIZATION
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     setupNavigation();
@@ -32,30 +39,24 @@ async function initializeApp() {
     }
 }
 
-// BULLETPROOF TMDB CALL (Uses CORS Proxy if direct fails)
+// ==========================================
+// CORE DATA FETCHING (DIRECT TMDB)
+// ==========================================
 async function getMovies(params) {
-    let baseUrl = "https://api.themoviedb.org/3";
     let url = "";
 
     if (params.id && params.type) {
-        url = `${baseUrl}/${params.type}/${params.id}?api_key=${CONFIG.TMDB_KEY}&append_to_response=videos&language=${userLang}`;
+        url = `${CONFIG.BASE_URL}/${params.type}/${params.id}?api_key=${CONFIG.API_KEY}&append_to_response=videos&language=${userLang}`;
     } else if (params.query) {
-        url = `${baseUrl}/search/multi?api_key=${CONFIG.TMDB_KEY}&query=${encodeURIComponent(params.query)}&language=${userLang}`;
+        url = `${CONFIG.BASE_URL}/search/multi?api_key=${CONFIG.API_KEY}&query=${encodeURIComponent(params.query)}&language=${userLang}`;
     } else if (params.endpoint) {
         const joiner = params.endpoint.includes('?') ? '&' : '?';
-        url = `${baseUrl}${params.endpoint}${joiner}api_key=${CONFIG.TMDB_KEY}&language=${userLang}`;
+        url = `${CONFIG.BASE_URL}${params.endpoint}${joiner}api_key=${CONFIG.API_KEY}&language=${userLang}`;
     }
 
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Direct blocked");
-        return await res.json();
-    } catch (err) {
-        // High-reliability open CORS proxy fallback
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const fallbackRes = await fetch(proxyUrl);
-        return await fallbackRes.json();
-    }
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("TMDB Fetch Failed");
+    return await response.json();
 }
 
 async function fetchAndRender(endpoint, containerId) {
@@ -70,7 +71,7 @@ async function fetchAndRender(endpoint, containerId) {
             container.innerHTML = '<p style="color:#777; padding:15px;">No content found.</p>';
         }
     } catch (err) {
-        container.innerHTML = '<p style="color:#e50914; padding:15px;">Loading error. Please refresh.</p>';
+        container.innerHTML = '<p style="color:#e50914; padding:15px;">Failed to load. Refresh page.</p>';
     }
 }
 
@@ -95,34 +96,31 @@ function generateMovieHTML(item) {
     `;
 }
 
+// ==========================================
+// DETAILS & STREAMING MODAL
+// ==========================================
 async function showMovieDetails(id, type) {
     if (!id) return;
     showLoading();
-    
+
     const streamType = (type === 'tv' || type === 'series') ? 'tv' : 'movie';
-    activeItem = { id: id, type: streamType, trailerKey: null, activeServer: 1 };
+    activeItem = { id: id, type: streamType };
 
     try {
         const data = await getMovies({ id: activeItem.id, type: activeItem.type });
         const modal = document.getElementById('detailsModal');
         const displayArea = document.getElementById('detailsContent');
-        
-        const trailerObj = data.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-        activeItem.trailerKey = trailerObj ? trailerObj.key : null;
-
         const isSaved = watchlist.some(m => m.id === data.id);
         const title = data.title || data.name || "Untitled";
+
+        const streamUrl = `https://vidsrc.me/embed/${streamType}?tmdb=${id}`;
 
         displayArea.innerHTML = `
             <div class="modal-body-content" style="padding:15px; color:#fff;">
                 <h2 style="color:#e50914; margin-bottom:8px; font-size:1.6rem;">${title}</h2>
                 
-                <div style="background:rgba(229,9,20,0.15); color:#ff5252; padding:8px 12px; border-radius:6px; font-size:0.85rem; margin-bottom:12px; border-left:4px solid #e50914;">
-                    ▶ <b>Streaming Player</b> (Agar video load na ho toh S2 ya S3 try karein).
-                </div>
-                
-                <div id="playerWrap" style="background:#000; border-radius:8px; overflow:hidden; margin-bottom:15px; position:relative; min-height:320px;">
-                    <iframe id="mainPlayerFrame" src="https://vidsrc.icu/embed/${streamType}/${id}" width="100%" height="420" frameborder="0" allowfullscreen style="background:#000; border:none; display:block;"></iframe>
+                <div id="playerWrap" style="background:#000; border-radius:8px; overflow:hidden; margin-bottom:15px; min-height:300px;">
+                    <iframe src="${streamUrl}" width="100%" height="420" frameborder="0" scrolling="no" allowfullscreen style="background:#000; border:none; display:block;"></iframe>
                 </div>
 
                 <p style="color:#bbb; font-size:0.95rem; line-height:1.5; margin-bottom:18px;">
@@ -133,8 +131,6 @@ async function showMovieDetails(id, type) {
                     <button onclick="stream(1)" style="background:#e50914; color:#fff; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 1</button>
                     <button onclick="stream(2)" style="background:#007bff; color:#fff; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 2</button>
                     <button onclick="stream(3)" style="background:#ffc107; color:#000; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">Server 3 (Anime)</button>
-                    
-                    ${activeItem.trailerKey ? `<button id="trailerToggleBtn" onclick="toggleTrailerView()" style="background:#222; color:#ff4444; border:1px solid #ff4444; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;"><i class="fab fa-youtube"></i> Watch Trailer</button>` : ''}
 
                     <button onclick="toggleWatchlist(${JSON.stringify(data).replace(/"/g, '&quot;')})" style="background:#28a745; color:#fff; border:none; padding:9px 14px; border-radius:5px; font-weight:bold; cursor:pointer;">
                         ${isSaved ? '✓ Saved' : '+ Watchlist'}
@@ -157,37 +153,19 @@ function stream(serverNo) {
     const wrap = document.getElementById('playerWrap');
     if (!wrap) return;
 
-    activeItem.activeServer = serverNo;
     const { id, type } = activeItem;
     let finalUrl = "";
 
-    if (serverNo === 1) finalUrl = `https://vidsrc.icu/embed/${type}/${id}`;
-    else if (serverNo === 2) finalUrl = `https://multiembed.mov/?video_id=${id}&tmdb=1`;
+    if (serverNo === 1) finalUrl = `https://vidsrc.me/embed/${type}?tmdb=${id}`;
+    else if (serverNo === 2) finalUrl = `https://vidsrc.cc/v2/embed/${type}/${id}`;
     else finalUrl = `https://vidsrc.xyz/embed/${type}?tmdb=${id}`;
 
     wrap.innerHTML = `<iframe src="${finalUrl}" width="100%" height="420" frameborder="0" scrolling="no" allowfullscreen style="background:#000; border-radius: 8px; border:none; display:block;"></iframe>`;
-    
-    const trailerBtn = document.getElementById('trailerToggleBtn');
-    if (trailerBtn) {
-        trailerBtn.innerHTML = '<i class="fab fa-youtube"></i> Watch Trailer';
-        trailerBtn.style.color = '#ff4444';
-    }
 }
 
-function toggleTrailerView() {
-    const wrap = document.getElementById('playerWrap');
-    const trailerBtn = document.getElementById('trailerToggleBtn');
-    if (!wrap || !activeItem.trailerKey) return;
-
-    if (trailerBtn.innerText.includes("Trailer")) {
-        wrap.innerHTML = `<iframe width="100%" height="420" src="https://www.youtube.com/embed/${activeItem.trailerKey}?autoplay=1&rel=0" frameborder="0" allowfullscreen style="border:none; border-radius:8px;"></iframe>`;
-        trailerBtn.innerHTML = '◀ Back to Full Movie';
-        trailerBtn.style.color = '#fff';
-    } else {
-        stream(activeItem.activeServer || 1);
-    }
-}
-
+// ==========================================
+// SEARCH & NAVIGATION
+// ==========================================
 async function executeSearch(query) {
     if (!query.trim()) return;
     showLoading();
